@@ -117,11 +117,13 @@ function main(train, test, learning_rate, decay_rate, T, lambda, r, ratio)
 	println("iter time objective_function precision@K = 1, 5, 10");
 	obj = objective(new_index, m, new_rows, d1, lambda, U, V);
 	p1,p2,p3=compute_precision(U, V, X, Y, d1, d2, rows, vals, rows_t, vals_t);
-	println("[", 0, ",", obj, ", ", p1," ",p2," ",p3, "],");
-    #println("[", 0, ",", obj, "],");
+    @printf("[%d, %.2f, %.5f, %.5f, %.5f, %.5f]\n", 0, 0.0, obj, p1, p2, p3);
+	# println("[", 0, ", 0.0, ", obj, ", ", p1," ",p2," ",p3, "],");
+    # println("[", 0, ",", obj, "],");
 
 	totaltime = 0.00000;
-	num_epoch = 121;
+	# num_epoch = 121;
+    num_epoch = 50;
     num_iterations_per_epoch = 1;
 	nowobj = obj;
 	for epoch = 1:num_epoch
@@ -143,13 +145,20 @@ function main(train, test, learning_rate, decay_rate, T, lambda, r, ratio)
             p1,p2,p3=compute_precision(U, V, X, Y, d1, d2, rows, vals, rows_t, vals_t);
 		    m = comp_m(new_rows, new_cols, U, V);
 		    nowobj = objective(new_index, m, new_rows, d1, lambda, U, V);
-		    println("[", epoch, ", ", totaltime, ", ", nowobj, ", ", p1,", ",p2,", ",p3, "],");
+            @printf("[%d, %.2f, %.5f, %.5f, %.5f, %.5f]\n", epoch, totaltime, obj, p1, p2, p3);
+		    # println("[", epoch, ", ", totaltime, ", ", nowobj, ", ", p1,", ",p2,", ",p3, "],");
 	    else
             m = comp_m(new_rows, new_cols, U, V);
             nowobj = objective(new_index, m, new_rows, d1, lambda, U, V);
-            println("[", epoch, ", ", totaltime, ", ", nowobj);
+            @printf("[%d, %.2f, %.5f]\n", epoch, totaltime, obj);
+            # println("[", epoch, ", ", totaltime, ", ", nowobj);
         end
     end
+
+    println();
+    println("Generate top 10 item recommendations for first 1000 users");
+    serving(U, V, X, d1, d2, rows);
+    
 end
 
 function stochasticQueuing(rows, index, d1, d2, ratio)
@@ -338,4 +347,28 @@ function compute_precision(U, V, X, Y, d1, d2, rows, vals, rows_t, vals_t)
 	#precision = precision./K/d1;
 	precision = precision./K/1000;
 	return precision[1], precision[2], precision[3]
+end
+
+function serving(U, V, X, d1, d2, rows)
+	# for i = shuffle(1:d1)[1:1000]
+    for i = 1:1000
+		tmp = nzrange(X, i);
+		train = Set(rows[tmp]);
+		score = zeros(d2);
+		ui = U[:, i];
+		for j = 1:d2
+			if j in train
+				score[j] = -10e10;
+				continue;
+			end
+			vj = V[:, j];
+			score[j] = dot(ui,vj);
+		end
+		p = sortperm(score, rev = true);
+        print(i, " [(", p[1], ", ", score[p[1]], ")")
+        for tup in zip(p[2:15], score[p[2:15]])
+            print(", ", tup)
+        end
+        println("]")
+    end
 end
