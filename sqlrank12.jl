@@ -5,7 +5,7 @@
 
 # main("ml1m_oc_50_train_ratings.csv", "ml1m_oc_50_test_ratings.csv", 0.2, 0.9, 1, 4, 100, 3)
 
-function main(train, test, learning_rate, decay_rate, T, lambda, r, ratio)
+function main(train, test, learning_rate, decay_rate, T, lambda, r, ratio, niter, eval=1)
 	#train = "ml1m_oc_50_train_ratings.csv"
 	#test = "ml1m_oc_50_test_ratings.csv"
 	# requires ratio to be integer, usually 3 works best
@@ -123,7 +123,7 @@ function main(train, test, learning_rate, decay_rate, T, lambda, r, ratio)
 
 	totaltime = 0.00000;
 	# num_epoch = 121;
-    num_epoch = 50;
+    num_epoch = niter;
     num_iterations_per_epoch = 1;
 	nowobj = obj;
 	for epoch = 1:num_epoch
@@ -142,15 +142,21 @@ function main(train, test, learning_rate, decay_rate, T, lambda, r, ratio)
         #learning_rate = learning_rate * 0.95
         if (epoch - 1) % T == 0
             learning_rate = learning_rate * decay_rate
-            p1,p2,p3=compute_precision(U, V, X, Y, d1, d2, rows, vals, rows_t, vals_t);
+            if eval == 1 || epoch == num_epoch
+                p1,p2,p3=compute_precision(U, V, X, Y, d1, d2, rows, vals, rows_t, vals_t);
+            end
 		    m = comp_m(new_rows, new_cols, U, V);
 		    nowobj = objective(new_index, m, new_rows, d1, lambda, U, V);
-            @printf("[%d, %.2f, %.5f, %.5f, %.5f, %.5f]\n", epoch, totaltime, obj, p1, p2, p3);
+            if eval == 1 || epoch == num_epoch
+                @printf("[%d, %.2f, %.5f, %.5f, %.5f, %.5f]\n", epoch, totaltime, nowobj, p1, p2, p3);
+            else
+                @printf("[%d, %.2f, %.5f]\n", epoch, totaltime, nowobj);
+            end
 		    # println("[", epoch, ", ", totaltime, ", ", nowobj, ", ", p1,", ",p2,", ",p3, "],");
 	    else
             m = comp_m(new_rows, new_cols, U, V);
             nowobj = objective(new_index, m, new_rows, d1, lambda, U, V);
-            @printf("[%d, %.2f, %.5f]\n", epoch, totaltime, obj);
+            @printf("[%d, %.2f, %.5f]\n", epoch, totaltime, nowobj);
             # println("[", epoch, ", ", totaltime, ", ", nowobj);
         end
     end
